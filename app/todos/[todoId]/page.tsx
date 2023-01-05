@@ -1,6 +1,8 @@
 import React from "react";
 import { Todo } from "../../../typings";
+import { notFound } from "next/navigation";
 
+export const dynamicParams = true;
 
 type PageProps = {
     params: {
@@ -10,7 +12,8 @@ type PageProps = {
 
 const fetchTodo = async (todoId: string) => {
     const res = await fetch(
-        `https://jsonplaceholder.typicode.com/todos/${todoId}`
+        `https://jsonplaceholder.typicode.com/todos/${todoId}`, 
+        {next: {revalidate: 60}}
     );
 
     const todo: Todo = await res.json();
@@ -21,6 +24,7 @@ const fetchTodo = async (todoId: string) => {
 async function TodoPage({ params: { todoId } }: PageProps){
     const todo = await fetchTodo(todoId);
 
+    if (!todo.id) return notFound();
    return (
     <div className="p-10 bg-yellow-200 border-2 m-2 shadow-lg">
         <p>
@@ -36,3 +40,15 @@ async function TodoPage({ params: { todoId } }: PageProps){
 }
 
 export default TodoPage;
+
+export async function generateStaticParams (){
+    const res = await fetch('https://jsonplaceholder.typicode.com/todos/');
+    const todos: Todo[] = await res.json();
+
+    //for the example of this demo to stop blocking-would be removed in production
+    const trimmedTodos = todos.splice(0, 10);
+
+    return trimmedTodos.map(todo => ({
+        todoId: todo.id.toString()
+    }))
+}
